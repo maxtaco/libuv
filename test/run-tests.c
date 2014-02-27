@@ -161,6 +161,14 @@ static int maybe_run_test(int argc, char **argv) {
 
     return 1;
   }
+
+  if (strcmp(argv[1], "spawn_helper9") == 0) {
+    struct stat statbuf;
+    int rc;
+    rc = fstat(0, &statbuf);
+    ASSERT (rc >= 0);
+    return 1;
+  }
 #endif  /* !_WIN32 */
 
   return run_test(argv[1], 0, 1);

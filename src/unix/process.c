@@ -309,6 +309,11 @@ static void uv__process_child_init(const uv_process_options_t* options,
       }
     }
 
+    if (close_fd != -1) {
+      /* Can't call uv__close, since that might fail an assertion if close_fd=0 */
+      close(close_fd);
+    }
+
     if (fd == use_fd)
       uv__cloexec(use_fd, 0);
     else
@@ -316,9 +321,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
 
     if (fd <= 2)
       uv__nonblock(fd, 0);
-
-    if (close_fd != -1)
-      uv__close(close_fd);
   }
 
   for (fd = 0; fd < stdio_count; fd++) {

@@ -1162,3 +1162,41 @@ TEST_IMPL(closed_fd_events) {
   return 0;
 }
 #endif  /* !_WIN32 */
+
+#ifndef _WIN32
+TEST_IMPL(closed_stdin_then_spawn) {
+  int fd;
+  int orig_stdin;
+  uv_fs_t fs_req;
+  uv_pipe_t in;
+  uv_stdio_container_t stdio[1];
+
+  fd = uv_fs_open(uv_default_loop(), &fs_req, "/dev/null", O_RDWR, 0, NULL);
+  ASSERT(fd >= 0);
+
+  init_process_options("spawn_helper9", exit_cb);
+
+  ASSERT(0 == uv_pipe_init(uv_default_loop(), &in, 0));
+
+  options.stdio = stdio;
+  options.stdio[0].flags = UV_CREATE_PIPE | UV_READABLE_PIPE;
+  options.stdio[0].data.stream = (uv_stream_t*) &in;
+  options.stdio_count = 1;
+
+  orig_stdin = dup(0);
+  close(0);
+
+  ASSERT(0 == uv_spawn(uv_default_loop(), &process, &options));
+
+  ASSERT(0 == uv_run(uv_default_loop(), UV_RUN_DEFAULT));
+  ASSERT(0 == uv_fs_close(uv_default_loop(), &fs_req, fd, NULL));
+
+  ASSERT(exit_cb_called == 1);
+
+  /* Replace stdin as before */
+  dup2(orig_stdin, 0);
+
+  MAKE_VALGRIND_HAPPY();
+  return 0;
+}
+#endif  /* !_WIN32 */
